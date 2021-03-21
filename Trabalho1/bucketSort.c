@@ -1,10 +1,11 @@
 //Compilado em Linux.Sujeito a mudanças caso outro sistema seja utilizado.
  
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <limits.h>
  
-#define tam_bucket 100
+#define tam_bucket 100000
 #define num_bucket 10
 #define max 10
  
@@ -77,21 +78,65 @@ void bubble (int v[], int tam) {
     }
 }
 
-int main () {
-    int v[100];
+#include "papi.h"
+#define NUM_EVENTS 2
+#define NUM_RUNS 5
 
-    for (int i=0; i<100; ++i) v[i] = i;
-    printf("Original array: ");
-    for (int i = 0; i < 100; i++) printf("%d ", v[i]);
+// Add papi metrics
+long long metrics[NUM_EVENTS];
+long long start, stop;
+float texe = 0;
+float means[NUM_EVENTS];
+int Events[NUM_EVENTS] = { PAPI_TOT_INS, PAPI_TOT_CYC };
+int EventSet = PAPI_NULL;
+
+int main () {
+
+    // Create and shuffle array
+    int v[tam_bucket];
+    for (int i=0; i<tam_bucket; ++i) v[i] = i%max;
+    shuffle (v, tam_bucket);
+
+    // Make array copy
+    int w[tam_bucket];
     
-    shuffle (v, 100);
-    printf("\nShuffled array: ");
-    for (int i = 0; i < 100; i++) printf("%d ", v[i]);
-    
-    bucket_sort(v, 100);
-    printf("\nSorted array: ");
-    for (int i = 0; i < 100; i++) printf("%d ", v[i]);
-    printf("\n");
+    // Start papi counters
+    // PAPI_start_counters(Events, NUM_EVENTS);
+    PAPI_library_init(PAPI_VER_CURRENT);
+    PAPI_create_eventset(&EventSet);
+    PAPI_add_events(EventSet, Events, NUM_EVENTS);
+    for (int i=0; i<NUM_EVENTS; ++i) means[i] = 0;
+
+    // Perform sorting computation
+    for (int i=0; i<NUM_RUNS; ++i) {
+        printf ("Start of iteration %d\n", i);
+        for (int j=0; j<tam_bucket; ++j) w[j] = v[j];
+        
+        start = PAPI_get_real_usec();
+        PAPI_start(EventSet);
+        
+        bucket_sort(w, tam_bucket);
+
+        PAPI_stop(EventSet, metrics);
+        for (int i=0; i<NUM_EVENTS; ++i) means[i] += metrics[i];
+        
+        texe += (float) (PAPI_get_real_usec() - start);
+        printf ("End of iteration %d\n", i);
+    }
+
+    // Calculate metric means
+    for (int i=0; i<NUM_EVENTS; ++i) means[i] /= NUM_RUNS;
+    texe /= NUM_RUNS;
+
+    // Print mean metrics
+    for (int i=0 ; i< NUM_EVENTS ; i++) {
+        char EventCodeStr[PAPI_MAX_STR_LEN];
+        
+        if (PAPI_event_code_to_name(Events[i], EventCodeStr) == PAPI_OK)
+            printf ("%s = %.2f\n", EventCodeStr, means[i]);
+        else printf ("PAPI UNKNOWN EVENT = %.2f\n", means[i]);
+    }
+    printf ("Execution time: %.2f us\n", texe);
 
     return 0;
 }
