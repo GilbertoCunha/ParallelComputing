@@ -3,3 +3,4 @@ run: bucketSort.c
 
 clean:
 	@rm ./a.out
+	@rm perf.*

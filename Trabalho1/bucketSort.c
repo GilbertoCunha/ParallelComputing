@@ -17,6 +17,8 @@ typedef struct {
 //cabeçalho das funções
 void bucket_sort (int v[],int tam);
 void bubble (int v[],int tam);
+void bubble1 (int v[],int tam);
+void bubble2 (int v[],int tam);
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -28,6 +30,12 @@ void shuffle (int array[], int n) {
             array[i] = t;
         }
     }
+}
+
+int isOrdered (int v[], int size) {
+    int i;
+    for (i=1; i<size && v[i-1]<=v[i]; ++i);
+    return i == size;
 }
 
 void bucket_sort (int v[], int tam) {                                     
@@ -49,7 +57,7 @@ void bucket_sort (int v[], int tam) {
     }
          
     for(i=0; i<num_bucket; i++) //ordena os baldes
-        if(b[i].topo) bubble(b[i].balde, b[i].topo);
+        if(b[i].topo) bubble2 (b[i].balde, b[i].topo);
          
     i=0;
     for(j=0; j<num_bucket; j++) { //põe os elementos dos baldes de volta no vetor
@@ -75,6 +83,40 @@ void bubble (int v[], int tam) {
             }
             if(!flag) break;
         }
+    }
+}
+
+void bubble1 (int v[], int tam) {
+    int i,j,temp,flag;
+
+    for(j=0; j<tam-1; j++) {
+        flag=0;
+        for(i=0; i<tam-j-1; i++) {
+            if(v[i]>v[i+1]) {
+                temp=v[i];
+                v[i]=v[i+1];
+                v[i+1]=temp;
+                flag=1;
+            }
+        }
+        if(!flag) break;
+    }
+}
+
+void bubble2 (int v[], int tam) {
+    int i,j,temp,flag;
+
+    for(j=0; j<tam-1; j++) {
+        flag=0;
+        for(i=0; i<tam-j-1; i++) {
+            if(v[i]>v[i+1]) {
+                flag=1;
+                temp=v[i+1];
+                v[i+1]=v[i];
+                v[i]=temp;
+            }
+        }
+        if(!flag) break;
     }
 }
 
@@ -109,7 +151,7 @@ int main () {
 
     // Perform sorting computation
     for (int i=0; i<NUM_RUNS; ++i) {
-        printf ("Start of iteration %d\n", i);
+        printf ("Iteration %d: ", i);
         for (int j=0; j<tam_bucket; ++j) w[j] = v[j];
         
         start = PAPI_get_real_usec();
@@ -118,10 +160,11 @@ int main () {
         bucket_sort(w, tam_bucket);
 
         PAPI_stop(EventSet, metrics);
+        if (isOrdered(w, tam_bucket)) printf ("success\n");
+        else printf ("failure\n");
         for (int i=0; i<NUM_EVENTS; ++i) means[i] += metrics[i];
         
         texe += (float) (PAPI_get_real_usec() - start);
-        printf ("End of iteration %d\n", i);
     }
 
     // Calculate metric means
