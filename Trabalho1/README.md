@@ -1,8 +1,9 @@
-version0: The code directly imported from portuguese wikipedia.
-version1: 
+bubble: The code directly imported from portuguese wikipedia.
+bubble1: 
     - Reduce number of inner cycles (subtract j)
     - Remove size checking (it is done before calling the function)
-    - Change order of comparison in inner cycle for memory hierarchy
+bubble2:
+    - Change if statement order of comparison in inner cycle for memory hierarchy
 
 | Métricas | Array Size |     CC      |     #I      |    CPI     |     L1 Misses     | Texe (us)  |
 |----------|------------|-------------|-------------|------------|-------------------|------------|

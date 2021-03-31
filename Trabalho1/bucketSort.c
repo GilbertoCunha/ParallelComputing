@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <limits.h>
  
-#define tam_bucket 100000
-#define num_bucket 10
-#define max 10
+#define tam_bucket 100000 // Tamanho total do array
+#define num_bucket 10 // Número de baldes
+#define max 10000 // Maior número que pode ser ordenado
  
 typedef struct {
     int topo;
@@ -40,10 +40,15 @@ int isOrdered (int v[], int size) {
 
 void bucket_sort (int v[], int tam) {                                     
     bucket b[num_bucket];                                      
-    int i,j,k;                                                 
+    int i, j, k, aux;                                                 
     for(i=0; i<num_bucket; i++) b[i].topo=0; //inicializa todos os "topo"
          
     for(i=0; i<tam; i++) { //verifica em que balde o elemento deve ficar
+        // Optimize the way numbers are distributed into buckets
+        aux = v[i];
+        j = aux / (max / num_bucket);
+        b[j].balde[b[j].topo++] = aux;
+        /*
         j=(num_bucket)-1;
         while (1) {
             if(j<0) break;
@@ -53,7 +58,7 @@ void bucket_sort (int v[], int tam) {
                 break;
             }
             j--;
-        }
+        }*/
     }
          
     for(i=0; i<num_bucket; i++) //ordena os baldes
@@ -92,7 +97,7 @@ void bubble1 (int v[], int tam) {
     for(j=0; j<tam-1; j++) {
         flag=0;
         for(i=0; i<tam-j-1; i++) {
-            if(v[i]>v[i+1]) {
+            if(v[i+1]<v[i]) {
                 temp=v[i];
                 v[i]=v[i+1];
                 v[i+1]=temp;
@@ -110,10 +115,10 @@ void bubble2 (int v[], int tam) {
         flag=0;
         for(i=0; i<tam-j-1; i++) {
             if(v[i]>v[i+1]) {
+                temp=v[i];
+                v[i]=v[i+1];
+                v[i+1]=temp;
                 flag=1;
-                temp=v[i+1];
-                v[i+1]=v[i];
-                v[i]=temp;
             }
         }
         if(!flag) break;
