@@ -5,20 +5,29 @@
 #include <stdlib.h>
 #include <limits.h>
  
-#define tam_bucket 100000 // Tamanho total do array
+#define tam_bucket 10000 // Tamanho total do array
 #define num_bucket 10 // Número de baldes
-#define max 10000 // Maior número que pode ser ordenado
+#define max 1000000 // Maior número que pode ser ordenado
  
+/*
 typedef struct {
     int topo;
     int balde[tam_bucket];
 } bucket;
+*/
+
+typedef struct {
+    int topo;
+    int *balde;
+} bucket;
  
 //cabeçalho das funções
-void bucket_sort (int v[],int tam);
+void bucket_sort (int v[], int tam);
 void bubble (int v[],int tam);
 void bubble1 (int v[],int tam);
 void bubble2 (int v[],int tam);
+void distributeBuckets (bucket b[], int v[], int tam);
+void distributeBuckets1 (bucket b[], int v[], int tam);
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -41,25 +50,14 @@ int isOrdered (int v[], int size) {
 void bucket_sort (int v[], int tam) {                                     
     bucket b[num_bucket];                                      
     int i, j, k, aux;                                                 
-    for(i=0; i<num_bucket; i++) b[i].topo=0; //inicializa todos os "topo"
-         
-    for(i=0; i<tam; i++) { //verifica em que balde o elemento deve ficar
-        // Optimize the way numbers are distributed into buckets
-        aux = v[i];
-        j = aux / (max / num_bucket);
-        b[j].balde[b[j].topo++] = aux;
-        /*
-        j=(num_bucket)-1;
-        while (1) {
-            if(j<0) break;
-            if(v[i]>=j*max) {
-                b[j].balde[b[j].topo]=v[i];
-                (b[j].topo)++;
-                break;
-            }
-            j--;
-        }*/
+    for(i=0; i<num_bucket; i++) {
+        b[i].topo=0; // Inicializa todos os "topo"
+        b[i].balde = malloc (num_bucket * tam_bucket * sizeof(int)); // Inicializar o array com o tamanho adequado
     }
+         
+    // Distribuir os elementos do array pelos baldes
+    // distributeBuckets (b, v, tam);
+    distributeBuckets1 (b, v, tam);
          
     for(i=0; i<num_bucket; i++) //ordena os baldes
         if(b[i].topo) bubble2 (b[i].balde, b[i].topo);
@@ -70,6 +68,31 @@ void bucket_sort (int v[], int tam) {
             v[i]=b[j].balde[k];
             i++;
         }
+    }
+}
+
+void distributeBuckets (bucket b[], int v[], int tam) {
+    int i, j;
+    for(i=0; i<tam; i++) {
+        j=(num_bucket)-1;
+        while (1) {
+            if(j<0) break;
+            if(v[i]>=j*max) {
+                b[j].balde[b[j].topo]=v[i];
+                (b[j].topo)++;
+                break;
+            }
+            j--;
+        }
+    }
+}
+
+void distributeBuckets1 (bucket b[], int v[], int tam) {
+    int i, j, aux;
+    for(i=0; i<tam; i++) {
+        aux = v[i];
+        j = aux / (max / num_bucket);
+        b[j].balde[b[j].topo++] = aux;
     }
 }
  
@@ -140,12 +163,13 @@ int EventSet = PAPI_NULL;
 int main () {
 
     // Create and shuffle array
-    int v[tam_bucket];
-    for (int i=0; i<tam_bucket; ++i) v[i] = i%max;
-    shuffle (v, tam_bucket);
+    int totalsize = tam_bucket * num_bucket;
+    int v[totalsize];
+    for (int i=0; i<totalsize; ++i) v[i] = i%max;
+    shuffle (v, totalsize);
 
     // Make array copy
-    int w[tam_bucket];
+    int w[totalsize];
     
     // Start papi counters
     // PAPI_start_counters(Events, NUM_EVENTS);
@@ -157,15 +181,15 @@ int main () {
     // Perform sorting computation
     for (int i=0; i<NUM_RUNS; ++i) {
         printf ("Iteration %d: ", i);
-        for (int j=0; j<tam_bucket; ++j) w[j] = v[j];
+        for (int j=0; j<totalsize; ++j) w[j] = v[j];
         
         start = PAPI_get_real_usec();
         PAPI_start(EventSet);
         
-        bucket_sort(w, tam_bucket);
+        bucket_sort(w, totalsize);
 
         PAPI_stop(EventSet, metrics);
-        if (isOrdered(w, tam_bucket)) printf ("success\n");
+        if (isOrdered(w, totalsize)) printf ("success\n");
         else printf ("failure\n");
         for (int i=0; i<NUM_EVENTS; ++i) means[i] += metrics[i];
         
@@ -177,7 +201,7 @@ int main () {
     texe /= NUM_RUNS;
 
     // Print mean metrics
-    for (int i=0 ; i< NUM_EVENTS ; i++) {
+    for (int i=0 ; i<NUM_EVENTS ; i++) {
         char EventCodeStr[PAPI_MAX_STR_LEN];
         
         if (PAPI_event_code_to_name(Events[i], EventCodeStr) == PAPI_OK)
