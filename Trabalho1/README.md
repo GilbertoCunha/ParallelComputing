@@ -1,17 +1,17 @@
-v0: The bucket sort code directly imported (slightly cleaned up) from portuguese wikipedia.
+v0: The bucket sort code directly imported (slightly cleaned up) from portuguese wikipedia. This version uses the functions "bucket_sort" with the functions "distributeBuckets" and "bubble".
 
-v1.0: Optimize array element distribution by buckets
+v1.0: Optimize array element distribution by buckets. This version uses the functions "bucket_sort" with the functions "distributeBuckets1" and "bubble".
 
-v1.1: 
+v1.1: This version uses the functions "bucket_sort" with the functions "distributeBuckets1" and "bubble1".
 - Reduce number of inner cycles (subtract j)
 - Remove size checking (it is done before calling the bubble function)
 
-v1.2:
+v1.2: This version uses the functions "bucket_sort" with the functions "distributeBuckets1" and "bubble2".
 - Change if statement order of comparison in inner cycle for memory hierarchy
 
-v1.2v: Vectorize bubble2 function
+v1.2v: Vectorize bubble2 function. This version uses the functions "bucket_sort" with the functions "distributeBuckets1" and "bubble3".
 
-v1.2.1v: Vectorize the whole bucketsort algorithm
+v1.2.1v: Vectorize the whole bucketsort algorithm. This version uses the functions "bucket_sort1" with the functions "distributeBuckets1" and "bubble3".
 
 | Version  | Array Size  | Num Buckets |      CC      |      #I      |    CPI    |       L1 Misses      | Texe (us) |
 |----------|-------------|-------------|--------------|--------------|-----------|----------------------|-----------|
@@ -38,6 +38,9 @@ v1.2.1v: Vectorize the whole bucketsort algorithm
 |          |   1000000   |      10     | 647579369472 | 600015110144 |   1.079   |  15689291984 (1.47%) | 155757616 |
 |  v1.21v  |   1000000   |     100     |  33220055040 |  60013502464 |   0.554   |    458925095 (0.60%) |   8025817 |
 |          |   1000000   |    1000     |   2857289216 |   6013846016 |   0.475   |     17815677 (0.26%) |    684138 | 
+
+v1.3: This version uses the functions "bucket_sort" with the functions "distributeBuckets1" and "mergesort".
+    - Uses merge sort instead of bubble sort
 
 |----------|-------------|-------------|--------------|--------------|-----------|----------------------|-----------|
 |          |   1000000   |       10    | 622653472768 | 625025351680 |   0.996   |  15627398426 (1.29%) | 148922752 |

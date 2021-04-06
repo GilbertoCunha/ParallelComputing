@@ -34,8 +34,13 @@ void bucket_sort (int v[], int tam) {
          
     // Ordenar os baldes
     for(i=0; i<num_bucket; i++)
-        if(b[i].topo) 
+        if(b[i].topo) {
+            // bubble (b[i].balde, b[i].topo);
+            // bubble1 (b[i].balde, b[i].topo);
+            // bubble2 (b[i].balde, b[i].topo);
+            // bubble3 (b[i].balde, b[i].topo);
             mergesort (b[i].balde, b[i].topo);
+        }
          
     // Inserir os elementos ordenados dos baldes de volta no vetor
     i=0;
@@ -78,6 +83,7 @@ int main () {
         PAPI_start(EventSet);
         
         bucket_sort (w, totalsize);
+        // bucket_sort1 (w, totalsize, num_bucket);
 
         PAPI_stop(EventSet, metrics);
         if (isOrdered(w, totalsize)) fprintf (stdout, "success\n");

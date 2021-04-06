@@ -169,7 +169,7 @@ void distributeBuckets1 (bucket b[], int v[], int tam, int num_bucket) {
 }
 
 void bucket_sort1 (int * __restrict__ v, int tam, int num_bucket) {                                     
-    bucket b[num_bucket];                                      
+    bucket *b = malloc (num_bucket * sizeof (bucket));                                      
     int i, j, k;
 
     // Inicializar os baldes                                                 
