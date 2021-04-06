@@ -15,12 +15,14 @@ typedef struct {
 
 void shuffle (int array[], int n);
 int isOrdered (int v[], int size);
+int compareSwap (int v[], int i);
 
 // Different Versions of bubble sort
 void bubble (int v[], int tam);
 void bubble1 (int v[], int tam);
 void bubble2 (int v[], int tam);
 void bubble3 (int * __restrict__ v, int tam);
+void mergesort (int v[], int tam);
 
 // Bucket array element Distribution
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket);

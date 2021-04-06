@@ -12,14 +12,14 @@
 #define totalsize 1000000
 
 // BucketSort defines
-#define num_bucket 10 // Número de baldes
+#define num_bucket 100000 // Número de baldes
 #define tam_bucket (int) totalsize/num_bucket // Tamanho total de cada balde
  
 //cabeçalho das funções
 // void bucket_sort (int v[], int tam);
 
 void bucket_sort (int v[], int tam) {                                     
-    bucket b[num_bucket];                                      
+    bucket *b = malloc (num_bucket * sizeof (bucket));                                      
     int i, j, k;
 
     // Inicializar os baldes                                                 
@@ -29,13 +29,13 @@ void bucket_sort (int v[], int tam) {
     }
          
     // Distribuir os elementos do array pelos baldes
-    // distributeBuckets (b, v, tam);
+    // distributeBuckets (b, v, tam, num_bucket);
     distributeBuckets1 (b, v, tam, num_bucket);
          
     // Ordenar os baldes
     for(i=0; i<num_bucket; i++)
         if(b[i].topo) 
-            bubble3 (b[i].balde, b[i].topo);
+            mergesort (b[i].balde, b[i].topo);
          
     // Inserir os elementos ordenados dos baldes de volta no vetor
     i=0;
@@ -77,7 +77,7 @@ int main () {
         start = PAPI_get_real_usec();
         PAPI_start(EventSet);
         
-        bucket_sort1(w, totalsize, num_bucket);
+        bucket_sort (w, totalsize);
 
         PAPI_stop(EventSet, metrics);
         if (isOrdered(w, totalsize)) fprintf (stdout, "success\n");

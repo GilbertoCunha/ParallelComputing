@@ -2,8 +2,8 @@
 #include "limits.h"
 #include "stdlib.h"
 
-#pragma GCC target("arch=znver2")
-#pragma GCC optimize("tree-vectorize")
+// #pragma GCC target("arch=znver2")
+// #pragma GCC optimize("tree-vectorize")
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -89,6 +89,37 @@ void bubble3 (int * __restrict__ v, int tam) {
             }
         }
         if(!flag) break;
+    }
+}
+
+void merge (int v[], int n, int mid) {
+    int *a = malloc (mid * sizeof (int));
+    int *b = malloc ((n-mid) * sizeof (int));
+
+    // Subdivide array
+    for (int i=0; i<mid; ++i) a[i] = v[i];
+    for (int i=0; i<n-mid; ++i) b[i] = v[mid+i];
+
+    // Insert elements of arrays a and b into v in sorted manner
+    int i=0, j=0, k=0;
+    while (j<mid && k<n-mid) {
+        if (a[j] < b[k]) v[i++] = a[j++];
+        else v[i++] = b[k++];
+    }
+
+    // Insert leftover elements
+    while (j<mid) v[i++] = a[j++];
+    while (k<n-mid) v[i++] = b[k++];
+}
+
+void mergesort (int v[], int tam) {
+    if (tam > 1) {
+        int mid = tam / 2;
+        // Divide
+        mergesort (v, mid);
+        mergesort (v + mid, tam - mid);
+        // Conquer
+        merge (v, tam, mid);
     }
 }
 
