@@ -106,7 +106,7 @@ int main () {
         else fprintf (stdout, "PAPI UNKNOWN EVENT = %.2f\n", means[i]);
     }
     fprintf (stdout, "Execution time: %.2f us\n", texe);
-    fprintf (stdout, "CPI: %.3f\n", means[1]/means[0]);
+    fprintf (stdout, "%f\nCPI: %.3f\n", means[0], means[1]/means[0]);
 
     return 0;
 }
