@@ -2,9 +2,6 @@
 #include "limits.h"
 #include "stdlib.h"
 
-// #pragma GCC target("arch=znver2")
-// #pragma GCC optimize("tree-vectorize")
-
 void shuffle (int array[], int n) {
     if (n > 1) {
         int i;
@@ -21,6 +18,23 @@ int isOrdered (int v[], int size) {
     int i;
     for (i=1; i<size && v[i-1]<=v[i]; ++i);
     return i == size;
+}
+
+void bubblesort (int v[], int tam) {
+    int i,j,temp,flag;
+
+    for(j=0; j<tam-1; j++) {
+        flag=0;
+        for(i=0; i<tam-j-1; i++) {
+            if(v[i]>v[i+1]) {
+                temp = v[i];
+                v[i] = v[i+1];
+                v[i+1] = temp;
+                flag = 1;
+            }
+        }
+        if(!flag) break;
+    }
 }
 
 void merge (int v[], int n, int mid) {
@@ -67,7 +81,7 @@ void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
 
     // Colocar cada elemento no balde correspondente
     n = (max - min + 1) / num_bucket;
-    for(i=0; i<tam; i++) {
+    for (i=0; i<tam; i++) {
         aux = v[i];
         j = aux / n;
         b[j].balde[b[j].topo++] = aux;
