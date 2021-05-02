@@ -1,6 +1,7 @@
 #include "bubble.h"
 #include "limits.h"
 #include "stdlib.h"
+#include <omp.h>
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -57,38 +58,74 @@ void merge (int v[], int n, int mid) {
     while (k<n-mid) v[i++] = b[k++];
 }
 
-void mergesort (int v[], int tam) {
+void mergesortaux (int v[], int tam, int cutoff) {
     if (tam > 1) {
         int mid = tam / 2;
         // Divide
-        mergesort (v, mid);
-        mergesort (v + mid, tam - mid);
+        if (tam < cutoff) {
+            mergesortaux (v, mid, cutoff);
+            mergesortaux (v + mid, tam - mid, cutoff);
+        }
+        else {
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                { mergesortaux (v, mid, cutoff); }
+                #pragma omp section
+                { mergesortaux (v + mid, tam - mid, cutoff); }
+            }
+        }
         // Conquer
         merge (v, tam, mid);
     }
 }
 
-int partition (int v[], int n) {
-    int pivot = 0;
-    int low = pivot + 1;
-    int high = n - 1;
+void mergesort (int v[], int tam) {
+    mergesortaux (v, tam, 1000);
+}
 
-    while (low < high) {
-        while (v[low] < v[pivot] && low<n) low++;
-        while (v[high] >= v[pivot] && high>=pivot) high--;
-        if (low < high) swap (v, low, high);
-    } 
+void swap (int* a, int* b) {
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
 
-    swap (v, pivot, high);
-    return high;
+int partition (int arr[], int low, int high) {
+    int pivot = arr[high];
+    int i = (low - 1);
+    for (int j = low; j <= high-1; j++) {
+        if (arr[j] <= pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    return (i + 1);
+}
+
+void quicksortaux (int arr[], int low, int high, int cutoff) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+
+        if (high - low < cutoff) {
+            quicksortaux (arr, low, pi - 1, cutoff);
+            quicksortaux (arr, pi + 1, high, cutoff);
+        }
+        else {
+            #pragma omp parallel sections 
+            {
+                #pragma omp section 
+                { quicksortaux (arr, low, pi - 1, cutoff); }
+                #pragma omp section 
+                { quicksortaux (arr, pi + 1, high, cutoff); }
+            }
+        }
+    }
 }
 
 void quicksort (int v[], int tam) {
-    // Conquer
-    int p = partition (v, tam);
-    // Divide
-    if (p > 1) quicksort (v, p);
-    if (n-p-1 > 1) quicksort (v+p+1, n-p-1);
+    // #pragma omp single nowait
+    quicksortaux (v, 0, tam-1, 1000);
 }
 
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {

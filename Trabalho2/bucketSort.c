@@ -7,21 +7,22 @@
 
 // Papi defines
 #define NUM_EVENTS 2
-#define NUM_RUNS 5
+#define NUM_RUNS 4
  
 // Tamanho total do array
 #define totalsize 10000000
 
 // BucketSort defines
-#define thread_count 1
+#define thread_count 6 // Número de threads
 #define num_bucket 10 // Número de baldes
 #define tam_bucket (int) totalsize/num_bucket // Tamanho total de cada balde
 
-void bucket_sort (int v[], int tam) {                                     
+void bucket_sort (int v[], int tam) {       
+                                  
     bucket *b = malloc (num_bucket * sizeof (bucket));                                      
     int i, j, k, tid;
 
-    // Inicializar os baldes                                                 
+    // Inicializar os baldes
     for(i=0; i<num_bucket; i++) {
         b[i].topo = 0; // Inicializar o número de elementos usados no balde
         b[i].balde = malloc (tam * sizeof(int)); // Inicializar o array com o tamanho adequado
@@ -43,7 +44,6 @@ void bucket_sort (int v[], int tam) {
         } 
         printf ("\tThread %d finished sorting bucket %d\n", tid, i);
     }
-    printf ("\n");
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
     i=0;
@@ -79,22 +79,30 @@ int main () {
 
     // Perform sorting computation
     for (int i=0; i<NUM_RUNS; ++i) {
-        fprintf (stdout, "Iteration %d: ", i);
-        fprintf (stdout, "\n");
+        // Initialize array copy and shuffle it
+        fprintf (stdout, "Iteration %d: \n", i);
         for (int j=0; j<totalsize; ++j) w[j] = v[j];
         shuffle (w, totalsize);
         
+        // Initialize papi events
         start = PAPI_get_real_usec();
         PAPI_start(EventSet);
         
+        // Sort the array
         bucket_sort (w, totalsize);
+        stop = PAPI_get_real_usec();
 
+        // Stop papi events
         PAPI_stop(EventSet, metrics);
-        if (isOrdered(w, totalsize)) fprintf (stdout, "success\n");
-        else fprintf (stdout, "failure\n");
+
+        // Check if array is sorted
+        if (isOrdered(w, totalsize)) fprintf (stdout, "\tSUCCESS\n\n");
+        else fprintf (stdout, "\tFAILURE\n\n");
+
+        // Get metrics
         for (int i=0; i<NUM_EVENTS; ++i) means[i] += metrics[i];
         
-        texe += (float) (PAPI_get_real_usec() - start);
+        texe += (float) (stop - start);
     }
 
     // Calculate metric means
@@ -106,11 +114,11 @@ int main () {
         char EventCodeStr[PAPI_MAX_STR_LEN];
         
         if (PAPI_event_code_to_name(Events[i], EventCodeStr) == PAPI_OK)
-            fprintf (stdout, "%s = %.2f\n", EventCodeStr, means[i]);
-        else fprintf (stdout, "PAPI UNKNOWN EVENT = %.2f\n", means[i]);
+            fprintf (stdout, "%s: %.2f\n", EventCodeStr, means[i]);
+        else fprintf (stdout, "PAPI UNKNOWN EVENT: %.2f\n", means[i]);
     }
     fprintf (stdout, "Execution time: %.2f us\n", texe);
-    fprintf (stdout, "%f\nCPI: %.3f\n", means[0], means[1]/means[0]);
+    fprintf (stdout, "CPI: %.3f\n", means[1]/means[0]);
 
     return 0;
 }
