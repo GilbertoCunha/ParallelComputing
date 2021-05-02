@@ -11,6 +11,7 @@ int isOrdered (int v[], int size);
 int compareSwap (int v[], int i);
 void mergesort (int v[], int tam);
 void bubblesort (int v[], int tam);
+void quicksort (int v[], int tam);
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket);
 
 #endif

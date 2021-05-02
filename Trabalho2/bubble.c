@@ -68,6 +68,29 @@ void mergesort (int v[], int tam) {
     }
 }
 
+int partition (int v[], int n) {
+    int pivot = 0;
+    int low = pivot + 1;
+    int high = n - 1;
+
+    while (low < high) {
+        while (v[low] < v[pivot] && low<n) low++;
+        while (v[high] >= v[pivot] && high>=pivot) high--;
+        if (low < high) swap (v, low, high);
+    } 
+
+    swap (v, pivot, high);
+    return high;
+}
+
+void quicksort (int v[], int tam) {
+    // Conquer
+    int p = partition (v, tam);
+    // Divide
+    if (p > 1) quicksort (v, p);
+    if (n-p-1 > 1) quicksort (v+p+1, n-p-1);
+}
+
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
     int i, j, aux;
     float n;

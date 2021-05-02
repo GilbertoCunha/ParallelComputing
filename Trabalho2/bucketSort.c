@@ -39,6 +39,7 @@ void bucket_sort (int v[], int tam) {
         if(b[i].topo) {
             mergesort (b[i].balde, b[i].topo);
             // bubblesort (b[i].balde, b[i].topo);
+            // quicksort (b[i].balde, b[i].topo);
         } 
         printf ("\tThread %d finished sorting bucket %d\n", tid, i);
     }
