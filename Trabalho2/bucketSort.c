@@ -7,14 +7,15 @@
 
 // Papi defines
 #define NUM_EVENTS 2
-#define NUM_RUNS 4
+#define NUM_RUNS 20 
  
 // Tamanho total do array
 #define totalsize 10000000
 
 // BucketSort defines
-#define thread_count 6 // Número de threads
+#define thread_count 12 // Número de threads
 #define num_bucket 10 // Número de baldes
+#define cutoff 1000 // Cutoff do sorting paralelo
 #define tam_bucket (int) totalsize/num_bucket // Tamanho total de cada balde
 
 void bucket_sort (int v[], int tam) {       
@@ -38,9 +39,10 @@ void bucket_sort (int v[], int tam) {
         //#pragma omp task firstprivate(i)
         tid = omp_get_thread_num();
         if(b[i].topo) {
-            mergesort (b[i].balde, b[i].topo);
-            // bubblesort (b[i].balde, b[i].topo);
+            // mergesort (b[i].balde, b[i].topo);
+            // mergesortparallel (b[i].balde, b[i].topo, cutoff);
             // quicksort (b[i].balde, b[i].topo);
+            quicksortparallel (b[i].balde, b[i].topo, cutoff);
         } 
         printf ("\tThread %d finished sorting bucket %d\n", tid, i);
     }
