@@ -21,7 +21,7 @@
 void bucket_sort (int v[], int tam) {       
                                   
     bucket *b = malloc (num_bucket * sizeof (bucket));                                      
-    int i, j, k, tid;
+    int i, j, k;
 
     // Inicializar os baldes
     for(i=0; i<num_bucket; i++) {
@@ -37,12 +37,12 @@ void bucket_sort (int v[], int tam) {
     #pragma omp for schedule(dynamic)
     for(i=0; i<num_bucket; i++) {
         //#pragma omp task firstprivate(i)
-        tid = omp_get_thread_num();
+        int tid = omp_get_thread_num();
         if(b[i].topo) {
             // mergesort (b[i].balde, b[i].topo);
             // mergesortparallel (b[i].balde, b[i].topo, cutoff);
-            // quicksort (b[i].balde, b[i].topo);
-            quicksortparallel (b[i].balde, b[i].topo, cutoff);
+            quicksort (b[i].balde, b[i].topo);
+            // quicksortparallel (b[i].balde, b[i].topo, cutoff);
         } 
         printf ("\tThread %d finished sorting bucket %d\n", tid, i);
     }

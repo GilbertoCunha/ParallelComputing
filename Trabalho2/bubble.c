@@ -2,6 +2,7 @@
 #include "limits.h"
 #include "stdlib.h"
 #include <omp.h>
+#include <stdio.h>
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -19,23 +20,6 @@ int isOrdered (int v[], int size) {
     int i;
     for (i=1; i<size && v[i-1]<=v[i]; ++i);
     return i == size;
-}
-
-void bubblesort (int v[], int tam) {
-    int i,j,temp,flag;
-
-    for(j=0; j<tam-1; j++) {
-        flag=0;
-        for(i=0; i<tam-j-1; i++) {
-            if(v[i]>v[i+1]) {
-                temp = v[i];
-                v[i] = v[i+1];
-                v[i+1] = temp;
-                flag = 1;
-            }
-        }
-        if(!flag) break;
-    }
 }
 
 void merge (int v[], int n, int mid) {
@@ -67,15 +51,17 @@ void mergesortparallelaux (int v[], int tam, int cutoff) {
             mergesortparallelaux (v + mid, tam - mid, cutoff);
         }
         else {
-            #pragma omp parallel sections
-            {
-                #pragma omp section
-                { mergesortparallelaux (v, mid, cutoff); }
-                #pragma omp section
-                { mergesortparallelaux (v + mid, tam - mid, cutoff); }
+            #pragma omp task 
+            { 
+                mergesortparallelaux (v, mid, cutoff); 
+            }
+            #pragma omp task 
+            { 
+                mergesortparallelaux (v + mid, tam - mid, cutoff);
             }
         }
         // Conquer
+        #pragma omp taskwait
         merge (v, tam, mid);
     }
 }
@@ -122,18 +108,22 @@ int partition (int arr[], int low, int high) {
 void quicksortparallelaux (int arr[], int low, int high, int cutoff) {
     if (low < high) {
         int pi = partition(arr, low, high);
-
         if (high - low < cutoff) {
             quicksortparallelaux (arr, low, pi - 1, cutoff);
             quicksortparallelaux (arr, pi + 1, high, cutoff);
         }
         else {
-            #pragma omp parallel sections 
-            {
-                #pragma omp section 
-                { quicksortparallelaux (arr, low, pi - 1, cutoff); }
-                #pragma omp section 
-                { quicksortparallelaux (arr, pi + 1, high, cutoff); }
+            // #pragma omp sections 
+            #pragma omp task 
+            { 
+                // #pragma omp section
+                quicksortparallelaux (arr, low, pi - 1, cutoff); 
+            }
+
+            #pragma omp task 
+            { 
+                // #pragma omp section
+                quicksortparallelaux (arr, pi + 1, high, cutoff); 
             }
         }
     }
