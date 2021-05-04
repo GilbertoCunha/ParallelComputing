@@ -38,7 +38,7 @@ void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, 
             else if (strcmp (sort_func, "quicksortparallel") == 0) 
                 quicksortparallel (b[i].balde, b[i].topo, cutoff);
         }
-        fprintf (out, "\tThread %d finished sorting bucket %d\n", tid, i);
+        // fprintf (out, "\tThread %d finished sorting bucket %d\n", tid, i);
     }
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
@@ -75,7 +75,7 @@ void bucket_sort (int v[], int tam, int num_buckets, char *sort_func, int cutoff
             else if (strcmp (sort_func, "quicksortparallel") == 0) 
                 quicksortparallel (b[i].balde, b[i].topo, cutoff);
         } 
-        fprintf (out, "\tFinished sorting bucket %d\n", i);
+        // fprintf (out, "\tFinished sorting bucket %d\n", i);
     }
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
@@ -120,7 +120,7 @@ int main (int argc, char **argv) {
     int cutoff = atoi(argv[6]);
 
     // Open results csv file
-    FILE *f, *out = fopen("out.log", "a");
+    FILE *f, *out = fopen("out.log", "w");
     if (access("results.csv", F_OK) != 0) {
         f = fopen("results.csv", "w");
         fprintf (f, "Total Size,Number of Buckets,Thread Count,Parallel,Sort Function,Cutoff,");
@@ -152,12 +152,18 @@ int main (int argc, char **argv) {
         shuffle (w, totalsize);
         
         // Initialize papi events
-        start = PAPI_get_real_usec();
-        PAPI_start(EventSet);
         
         // Sort the array
-        if (is_bucket_parallel) bucket_sort_parallel (w, totalsize, num_buckets, thread_count, sort_func, cutoff, out);
-        else bucket_sort (w, totalsize, num_buckets, sort_func, cutoff, out);
+        if (is_bucket_parallel) {
+            start = PAPI_get_real_usec();
+            PAPI_start(EventSet);
+            bucket_sort_parallel (w, totalsize, num_buckets, thread_count, sort_func, cutoff, out);
+        }
+        else {
+            start = PAPI_get_real_usec();
+            PAPI_start(EventSet);
+            bucket_sort (w, totalsize, num_buckets, sort_func, cutoff, out);
+        }
         stop = PAPI_get_real_usec();
 
         // Stop papi events

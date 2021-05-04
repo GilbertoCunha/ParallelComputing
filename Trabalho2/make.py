@@ -4,8 +4,8 @@ from os import system
 import numpy as np
 
 # All execution arguments
-total_size = [10**i for i in range(3, 9)]
-num_buckets = [10**i for i in range(1, 8)]
+total_size = [10**i for i in range(3, 8)]
+num_buckets = [10**i for i in range(1, 7)]
 thread_count = [i for i in range(1, 13)]
 cutoff = [10**i for i in range(6)]
 
