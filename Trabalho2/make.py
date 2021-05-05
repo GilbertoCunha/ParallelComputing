@@ -14,14 +14,15 @@ iterator = list(product(total_size, num_buckets, thread_count, cutoff))
 print (f"Total number of runs: {len(iterator)}\n")
 
 # Execução quicksort em paralelo
-for s, b, c, cut in tqdm(iterator, desc="Parallel Quicksort", total=len(iterator)):
+"""for s, b, c, cut in tqdm(iterator, desc="Parallel Quicksort", total=len(iterator)):
     if b < s and cut == cutoff[0]:
         command = f"make totalsize={s} num_buckets={b} thread_count={c} parallel=1 sort_func=\"quicksort\""
         tqdm.write (command)
         system (command)
+"""
 
 # Execução quicksort sequencial
-for s, b, c, sf, cut in tqdm(iterator, desc="Sequential Quicksort", total=len(iterator)):
+for s, b, c, cut in tqdm(iterator, desc="Sequential Quicksort", total=len(iterator)):
     if b < s and c == thread_count[0] and cutoff == cutoff[0]:
         command = f"make totalsize={s} num_buckets={b} parallel=0 sort_func=\"quicksort\""
         tqdm.write (command)
@@ -35,7 +36,7 @@ for s, b, c, cut in tqdm(iterator, desc="Parallel Quicksortparallel", total=len(
         system (command)
 
 # Execução quicksortparallel sequencial
-for s, b, c, sf, cut in tqdm(iterator, desc="Sequential QuicksortParallel", total=len(iterator)):
+for s, b, c, cut in tqdm(iterator, desc="Sequential QuicksortParallel", total=len(iterator)):
     if b < s and c == thread_count[0]:
         command = f"make totalsize={s} num_buckets={b} parallel=0 sort_func=\"quicksortparallel\" cutoff={cut}"
         tqdm.write (command)
