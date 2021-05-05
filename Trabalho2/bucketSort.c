@@ -124,7 +124,7 @@ int main (int argc, char **argv) {
     if (access("results.csv", F_OK) != 0) {
         f = fopen("results.csv", "w");
         fprintf (f, "Total Size,Number of Buckets,Thread Count,Parallel,Sort Function,Cutoff,");
-        fprintf (f, "I mean, I std, CC mean, CC std, Texe mean, Texe std, CPI mean, CPI std\n"); 
+        fprintf (f, "I mean,I std,CC mean,CC std,Texe mean,Texe std,CPI mean,CPI std\n"); 
     }
     else f = fopen("results.csv", "a");
 
