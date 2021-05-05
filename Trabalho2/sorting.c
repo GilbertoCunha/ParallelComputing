@@ -1,4 +1,4 @@
-#include "bubble.h"
+#include "sorting.h"
 #include "limits.h"
 #include "stdlib.h"
 #include <omp.h>
@@ -16,22 +16,17 @@ void shuffle (int array[], int n) {
     }
 }
 
-int isOrdered (int v[], int size) {
-    int i;
-    for (i=1; i<size && v[i-1]<=v[i]; ++i);
-    return i == size;
-}
-
 void merge (int v[], int n, int mid) {
     int *a = malloc (mid * sizeof (int));
-    int *b = malloc ((n-mid) * sizeof (int));
+    int i, *b = malloc ((n-mid) * sizeof (int));
 
     // Subdivide array
-    for (int i=0; i<mid; ++i) a[i] = v[i];
-    for (int i=0; i<n-mid; ++i) b[i] = v[mid+i];
+    for (i=0; i<mid; ++i) a[i] = v[i];
+    for (i=0; i<n-mid; ++i) b[i] = v[mid+i];
 
     // Insert elements of arrays a and b into v in sorted manner
-    int i=0, j=0, k=0;
+    i = 0;
+    int j=0, k=0;
     while (j<mid && k<n-mid) {
         if (a[j] < b[k]) v[i++] = a[j++];
         else v[i++] = b[k++];
@@ -94,8 +89,8 @@ void swap (int* a, int* b) {
 
 int partition (int arr[], int low, int high) {
     int pivot = arr[high];
-    int i = (low - 1);
-    for (int j = low; j <= high-1; j++) {
+    int i = (low - 1), j;
+    for (j = low; j <= high-1; j++) {
         if (arr[j] <= pivot) {
             i++;
             swap(&arr[i], &arr[j]);

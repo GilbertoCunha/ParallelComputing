@@ -7,7 +7,6 @@ typedef struct {
 } bucket;
 
 void shuffle (int array[], int n);
-int isOrdered (int v[], int size);
 int compareSwap (int v[], int i);
 void mergesort (int v[], int tam);
 void mergesortparallel (int v[], int tam, int cutoff);

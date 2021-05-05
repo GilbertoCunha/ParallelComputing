@@ -5,13 +5,13 @@
 #include <unistd.h>
 #include <math.h>
 #include "papi.h"
-#include "bubble.h"
+#include "sorting.h"
 
 // Papi defines
 #define NUM_EVENTS 2
 #define NUM_RUNS 200 
  
-void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, char *sort_func, int cutoff, FILE *out) {
+void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, char *sort_func, int cutoff) {
     bucket *b = malloc (num_buckets * sizeof (bucket));                                      
     int i, j, k;
 
@@ -28,17 +28,13 @@ void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, 
     #pragma omp parallel num_threads(thread_count)
     #pragma omp for schedule(dynamic)
     for(i=0; i<num_buckets; i++) {
-        //#pragma omp task firstprivate(i)
         int tid = omp_get_thread_num();
         if(b[i].topo) {
-            // mergesort (b[i].balde, b[i].topo);
-            // mergesortparallel (b[i].balde, b[i].topo, cutoff);
             if (strcmp (sort_func, "quicksort") == 0)
                 quicksort (b[i].balde, b[i].topo);
             else if (strcmp (sort_func, "quicksortparallel") == 0) 
                 quicksortparallel (b[i].balde, b[i].topo, cutoff);
         }
-        // fprintf (out, "\tThread %d finished sorting bucket %d\n", tid, i);
     }
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
@@ -51,7 +47,7 @@ void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, 
     free (b);
 }
 
-void bucket_sort (int v[], int tam, int num_buckets, char *sort_func, int cutoff, FILE *out) {
+void bucket_sort (int v[], int tam, int num_buckets, char *sort_func, int cutoff) {
     bucket *b = malloc (num_buckets * sizeof (bucket));                                      
     int i, j, k;
 
@@ -66,16 +62,12 @@ void bucket_sort (int v[], int tam, int num_buckets, char *sort_func, int cutoff
          
     // Ordenar os baldes
     for(i=0; i<num_buckets; i++) {
-        //#pragma omp task firstprivate(i)
         if(b[i].topo) {
-            // mergesort (b[i].balde, b[i].topo);
-            // mergesortparallel (b[i].balde, b[i].topo, cutoff);
             if (strcmp (sort_func, "quicksort") == 0)
                 quicksort (b[i].balde, b[i].topo);
             else if (strcmp (sort_func, "quicksortparallel") == 0) 
                 quicksortparallel (b[i].balde, b[i].topo, cutoff);
         } 
-        // fprintf (out, "\tFinished sorting bucket %d\n", i);
     }
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
@@ -88,20 +80,6 @@ void bucket_sort (int v[], int tam, int num_buckets, char *sort_func, int cutoff
     free (b);
 }
 
-float mean (float v[], int n) {
-    float r = 0;
-    for (int i=0; i<n; ++i) r += v[i];
-    r /= n;
-    return r;
-}
-
-float std (float v[], int n) {
-    float r = 0;
-    float vmean = mean (v, n);
-    for (int i=0; i<n; ++i) r += pow (v[i] - vmean, 2);
-    r = sqrt(r / n);
-    return r; 
-}
 
 // Add papi metrics
 long long metrics[NUM_EVENTS+1];
@@ -120,17 +98,17 @@ int main (int argc, char **argv) {
     int cutoff = atoi(argv[6]);
 
     // Open results csv file
-    FILE *f, *out = fopen("out.log", "w");
+    FILE *f;
     if (access("results.csv", F_OK) != 0) {
         f = fopen("results.csv", "w");
         fprintf (f, "Total Size,Number of Buckets,Thread Count,Parallel,Sort Function,Cutoff,");
-        fprintf (f, "I mean,I std,CC mean,CC std,Texe mean,Texe std,CPI mean,CPI std\n"); 
+        fprintf (f, "I,CC,Texe,CPI\n"); 
     }
     else f = fopen("results.csv", "a");
 
     // Create and shuffle array 
-    int *v = malloc (totalsize * sizeof (int)); 
-    for (int i=0; i<totalsize; ++i) v[i] = i;
+    int i, j, *v = malloc (totalsize * sizeof (int)); 
+    for (i=0; i<totalsize; ++i) v[i] = i;
 
     // Make array copy
     int *w = malloc (totalsize * sizeof (int));
@@ -139,16 +117,15 @@ int main (int argc, char **argv) {
     PAPI_library_init(PAPI_VER_CURRENT);
     PAPI_create_eventset(&EventSet);
     PAPI_add_events(EventSet, Events, NUM_EVENTS);
-    for (int i=0; i<NUM_EVENTS; ++i) means[i] = 0;
+    for (i=0; i<NUM_EVENTS; ++i) means[i] = 0;
 
     // Create arrays for metrics
-    float texe[NUM_RUNS], CPIS[NUM_RUNS], CC[NUM_RUNS], I[NUM_RUNS];
+    float texe, CPI, CC, I;
 
     // Perform sorting computation
-    for (int i=0; i<NUM_RUNS; ++i) {
+    for (i=0; i<NUM_RUNS; ++i) {
         // Initialize array copy and shuffle it
-        fprintf (out, "Iteration %d: \n", i);
-        for (int j=0; j<totalsize; ++j) w[j] = v[j];
+        for (j=0; j<totalsize; ++j) w[j] = v[j];
         shuffle (w, totalsize);
         
         // Initialize papi events
@@ -157,55 +134,38 @@ int main (int argc, char **argv) {
         if (is_bucket_parallel) {
             start = PAPI_get_real_usec();
             PAPI_start(EventSet);
-            bucket_sort_parallel (w, totalsize, num_buckets, thread_count, sort_func, cutoff, out);
+            bucket_sort_parallel (w, totalsize, num_buckets, thread_count, sort_func, cutoff);
         }
         else {
             start = PAPI_get_real_usec();
             PAPI_start(EventSet);
-            bucket_sort (w, totalsize, num_buckets, sort_func, cutoff, out);
+            bucket_sort (w, totalsize, num_buckets, sort_func, cutoff);
         }
         stop = PAPI_get_real_usec();
 
         // Stop papi events
         PAPI_stop(EventSet, metrics);
 
-        // Check if array is sorted
-        if (isOrdered(w, totalsize)) fprintf (out, "\tSUCCESS\n\n");
-        else fprintf (out, "\tFAILURE\n\n");
-
         // Get metrics
-        texe[i] = (float) (stop - start);
-        I[i] = (float) metrics[0];
-        CC[i] = (float) metrics[1];
-        CPIS[i] = (float) CC[i] / I[i];
+        texe = (float) (stop - start);
+        I = (float) metrics[0];
+        CC = (float) metrics[1];
+        CPI = (float) CC / I;
+
+        // Print arguments to csv file
+        fprintf (f, "%d,", totalsize);
+        fprintf (f, "%d,", num_buckets);
+        fprintf (f, "%d,", thread_count);
+        fprintf (f, "%d,", is_bucket_parallel);
+        fprintf (f, "%s,", sort_func);
+        fprintf (f, "%d,", cutoff);
+
+        // Log metrics to csv file
+        fprintf (f, "%f,", I);
+        fprintf (f, "%f,", CC);
+        fprintf (f, "%f,", texe); 
+        fprintf (f, "%f\n", CPI);
     }
-
-    // Print mean metrics
-    fprintf (out, "ARGUMENTS: \n");
-    fprintf (out, "Totalsize: %d\n", totalsize);
-    fprintf (out, "Number of Buckets: %d\n", num_buckets);
-    fprintf (out, "Thread Count: %d\n", thread_count);
-    fprintf (out, "Is bucket parallel: %d\n", is_bucket_parallel);
-    fprintf (out, "Sorting Function: %s\n", sort_func);
-    fprintf (out, "Cutoff: %d\n", cutoff);
-    fprintf (out, "\nMETRICS: \n");
-    fprintf (f, "%d,", totalsize);
-    fprintf (f, "%d,", num_buckets);
-    fprintf (f, "%d,", thread_count);
-    fprintf (f, "%d,", is_bucket_parallel);
-    fprintf (f, "%s,", sort_func);
-    fprintf (f, "%d,", cutoff);
-    
-    fprintf (out, "CC mean: %.2f | CC std: %.2f", mean(CC, NUM_RUNS), std(CPIS, NUM_RUNS));
-    fprintf (out, "Execution time mean: %.2f us | Execution time std: %.2f\n", mean(texe, NUM_RUNS), std(CPIS, NUM_RUNS));
-    fprintf (out, "CPI mean: %.2f | CPI std: %.2f\n", mean(CPIS, NUM_RUNS), std(CPIS, NUM_RUNS));
-    fprintf (out, "#I mean: %.2f | #I std: %.2f\n", mean(I, NUM_RUNS), std(I, NUM_RUNS));
-
-    fprintf (f, "%f,%f,", mean(I, NUM_RUNS), std(I, NUM_RUNS));
-    fprintf (f, "%f,%f,", mean(CC, NUM_RUNS), std(CPIS, NUM_RUNS));
-    fprintf (f, "%f,%f,", mean(texe, NUM_RUNS), std(CPIS, NUM_RUNS));
-    fprintf (f, "%f,%f\n", mean(CPIS, NUM_RUNS), std(CPIS, NUM_RUNS));
-
 
     fclose (f);
 
