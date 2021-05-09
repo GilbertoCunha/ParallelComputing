@@ -87,6 +87,7 @@ void swap (int* a, int* b) {
     *b = t;
 }
 
+/*
 int partition (int arr[], int low, int high) {
     int pivot = arr[high];
     int i = (low - 1), j;
@@ -98,39 +99,69 @@ int partition (int arr[], int low, int high) {
     }
     swap(&arr[i + 1], &arr[high]);
     return (i + 1);
+}*/
+
+
+int partition(int *a, int p, int r) {
+    int lt[r-p];
+    int gt[r-p];
+    int i;
+    int j;
+    int key = a[r];
+    int lt_n = 0;
+    int gt_n = 0;
+
+    for(i = p; i < r; i++){
+        if(a[i] < a[r]){
+            lt[lt_n++] = a[i];
+        }else{
+            gt[gt_n++] = a[i];
+        }   
+    }   
+
+    for(i = 0; i < lt_n; i++){
+        a[p + i] = lt[i];
+    }   
+
+    a[p + lt_n] = key;
+
+    for(j = 0; j < gt_n; j++){
+        a[p + lt_n + j + 1] = gt[j];
+    }   
+
+    return p + lt_n;
 }
 
 void quicksortparallelaux (int arr[], int low, int high, int cutoff) {
     if (low < high) {
+        int id = omp_get_thread_num();
+        // printf ("Thread %d executing | Size: %d\n", id, high-low+1);
         int pi = partition(arr, low, high);
         if (high - low < cutoff) {
             quicksortparallelaux (arr, low, pi - 1, cutoff);
             quicksortparallelaux (arr, pi + 1, high, cutoff);
         }
         else {
-            // #pragma omp sections 
-            #pragma omp task 
-            { 
-                // #pragma omp section
-                quicksortparallelaux (arr, low, pi - 1, cutoff); 
-            }
+            #pragma omp task
+            quicksortparallelaux (arr, low, pi - 1, cutoff); 
 
-            #pragma omp task 
-            { 
-                // #pragma omp section
-                quicksortparallelaux (arr, pi + 1, high, cutoff); 
-            }
+            #pragma omp task
+            quicksortparallelaux (arr, pi + 1, high, cutoff); 
         }
     }
 }
 
 void quicksortparallel (int v[], int tam, int cutoff) {
+    omp_set_dynamic(0);
     quicksortparallelaux (v, 0, tam-1, cutoff);
+    omp_set_dynamic(1);
 }
 
 void quicksortaux (int arr[], int low, int high) {
     if (low < high) {
         int pi = partition(arr, low, high);
+        int id = omp_get_thread_num();
+        //printf("Thread %d executing\n", id);
 
         quicksortaux (arr, low, pi - 1);
         quicksortaux (arr, pi + 1, high);

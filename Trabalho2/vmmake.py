@@ -1,5 +1,4 @@
 from itertools import product
-from tqdm import tqdm
 from os import system
 
 # All execution arguments
@@ -13,17 +12,17 @@ system("gcc -g -O2 -fopenmp -I/share/apps/papi/5.5.0/include -L/share/apps/papi/
 
 # Execução quicksort em paralelo
 ps = list(product(total_size, num_buckets, thread_count))
-for s, b, c in tqdm(ps, desc="Parallel Quicksort", total=len(ps)):
+for s, b, c in ps:
     if b < s:
-        command = f"sudo ./a.out {s} {b} {c} 1 \"quicksort\" 1"
+        command = f"./a.out {s} {b} {c} 1 \"quicksort\" 1"
         tqdm.write (command)
         system (command)
 
 # Execução quicksort sequencial
 ss = list(product(total_size, num_buckets))
-for s, b in tqdm(ss, desc="Sequential Quicksort", total=len(ss)):
+for s, b in ss: 
     if b < s: 
-        command = f"sudo ./a.out {s} {b} 1 0 \"quicksort\" 1"
+        command = f"./a.out {s} {b} 1 0 \"quicksort\" 1"
         tqdm.write (command)
         system (command)
 
