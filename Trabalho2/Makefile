@@ -1,8 +1,8 @@
 totalsize = 10000000
-num_buckets = 10
+num_buckets = 5
 thread_count = 12
 parallel = 1
-sort_func = "quicksortparallel"
+sort_func = "quicksort"
 cutoff = 100000
 
 run: bucketSort.c

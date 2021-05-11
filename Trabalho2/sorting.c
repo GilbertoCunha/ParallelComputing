@@ -87,7 +87,6 @@ void swap (int* a, int* b) {
     *b = t;
 }
 
-/*
 int partition (int arr[], int low, int high) {
     int pivot = arr[high];
     int i = (low - 1), j;
@@ -99,9 +98,9 @@ int partition (int arr[], int low, int high) {
     }
     swap(&arr[i + 1], &arr[high]);
     return (i + 1);
-}*/
+}
 
-
+/*
 int partition(int *a, int p, int r) {
     int lt[r-p];
     int gt[r-p];
@@ -130,7 +129,7 @@ int partition(int *a, int p, int r) {
     }   
 
     return p + lt_n;
-}
+}*/
 
 void quicksortparallelaux (int arr[], int low, int high, int cutoff) {
     if (low < high) {
@@ -176,11 +175,53 @@ void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
     int i, j, aux;
     float n;
 
-    // Calcular máximo e mínimo do array
+    // Calcular máximo e mínimo do array 
     int max = v[0], min = v[0];
     for (i=1; i<tam; ++i) {
         if (v[i] > max) max = v[i];
         if (v[i] < min) min = v[i];
+    }
+
+    // Colocar cada elemento no balde correspondente
+    n = (max - min + 1) / num_bucket;
+    //#pragma omp for schedule(dynamic)
+    for (i=0; i<tam; i++) {
+        aux = v[i];
+        j = aux / n;
+        //omp_set_lock(&(b[j].lock));
+        b[j].balde[b[j].topo++] = aux;
+        //omp_unset_lock(&(b[j].lock));
+    }
+}
+
+void distributeBucketsParallel (bucket b[], int v[], int tam, int num_bucket, int thread_count) {
+    int i, j, aux;
+    float n;
+
+    int sizes[thread_count], cum_size=tam;
+    for (i=0; i<thread_count; ++i) {
+        sizes[i] = cum_size / (thread_count-i);
+        cum_size -= sizes[i]; 
+    }
+
+    // Calcular máximo e mínimo em pedaços do array para cada thread 
+    int maxs[thread_count], mins[thread_count];
+    cum_size = 0;
+    #pragma omp for schedule(dynamic)
+    for(i=0; i<thread_count; ++i) {
+        int max = v[cum_size], min = v[cum_size];
+        for (j=cum_size+1; j<cum_size+sizes[i]; ++j) {
+            if (v[j] > max) max = v[j];
+            if (v[j] < min) min = v[j];
+        }
+        maxs[i] = max;
+        mins[i] = min;
+        cum_size += sizes[i];
+    }
+    int max = maxs[0], min = mins[0];
+    for (i=1; i<thread_count; ++i) {
+        if (max < maxs[i]) max = maxs[i];
+        if (min > mins[i]) min = mins[i];
     }
 
     // Colocar cada elemento no balde correspondente
