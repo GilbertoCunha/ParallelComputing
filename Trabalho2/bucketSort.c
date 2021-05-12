@@ -17,25 +17,30 @@ void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, 
 
     // Inicializar os baldes
 
-    #pragma omp parallel num_threads(thread_count)
-    #pragma omp for schedule(dynamic)
-    for(i=0; i<num_buckets; i++) {
-        b[i].topo = 0; // Inicializar o número de elementos usados no balde
-        b[i].balde = malloc (tam * sizeof(int)); // Inicializar o array com o tamanho adequado
-    }
-         
+//    #pragma omp parallel num_threads(thread_count)
+//    {
+//        #pragma omp for schedule(dynamic)
+        for(i=0; i<num_buckets; i++) {
+            b[i].topo = 0; // Inicializar o número de elementos usados no balde
+            b[i].balde = malloc (tam * sizeof(int)); // Inicializar o array com o tamanho adequado
+        }
+//    }
+
     // Distribuir os elementos do array pelos baldes
     distributeBuckets(b, v, tam, num_buckets);
 
     // Ordenar os baldes
-    #pragma omp for schedule(dynamic)
-    for(i=0; i<num_buckets; i++) {
-        int tid = omp_get_thread_num();
-        if(b[i].topo) {
-            if (strcmp (sort_func, "quicksort") == 0)
-                quicksort (b[i].balde, b[i].topo);
-            else if (strcmp (sort_func, "quicksortparallel") == 0) 
-                quicksortparallel (b[i].balde, b[i].topo, cutoff);
+    #pragma omp parallel num_threads(thread_count)
+    {
+        #pragma omp for schedule(dynamic)
+        for(i=0; i<num_buckets; i++) {
+            int tid = omp_get_thread_num();
+            if(b[i].topo) {
+                if (strcmp (sort_func, "quicksort") == 0)
+                    quicksort (b[i].balde, b[i].topo);
+                else if (strcmp (sort_func, "quicksortparallel") == 0) 
+                    quicksortparallel (b[i].balde, b[i].topo, cutoff);
+            }
         }
     }
 
@@ -46,12 +51,15 @@ void bucket_sort_parallel (int v[], int tam, int num_buckets, int thread_count, 
         sums[i] = sums[i-1] + b[i-1].topo;
 
     // Inserir os elementos ordenados dos baldes de volta no vetor
-    #pragma omp for schedule(dynamic)
-    for(j=0; j<num_buckets; j++) {
-        for(k=0; k<b[j].topo; k++) 
-            v[sums[j]+k] = b[j].balde[k];
-        free (b[j].balde);
-    }
+//    #pragma omp parallel num_threads(thread_count)
+//    {
+//        #pragma omp for schedule(dynamic)
+        for(j=0; j<num_buckets; j++) {
+            for(k=0; k<b[j].topo; k++) 
+                v[sums[j]+k] = b[j].balde[k];
+            free (b[j].balde);
+        }
+//    }
     free (b);
 }
 
@@ -109,12 +117,12 @@ int main (int argc, char **argv) {
 
     // Open results csv file
     FILE *f;
-    if (access("test1.csv", F_OK) != 0) {
-        f = fopen("test1.csv", "w");
+    if (access("new1.csv", F_OK) != 0) {
+        f = fopen("new1.csv", "w");
         fprintf (f, "Total Size,Number of Buckets,Thread Count,Parallel,Sort Function,Cutoff,");
         fprintf (f, "I,CC,Texe,CPI\n"); 
     }
-    else f = fopen("test1.csv", "a");
+    else f = fopen("new1.csv", "a");
 
     // Create and shuffle array 
     int i, j, *v = malloc (totalsize * sizeof (int)); 
