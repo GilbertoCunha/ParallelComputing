@@ -1,7 +1,6 @@
 #include "sorting.h"
 #include "limits.h"
 #include "stdlib.h"
-#include <omp.h>
 #include <stdio.h>
 
 void shuffle (int array[], int n) {
@@ -16,69 +15,10 @@ void shuffle (int array[], int n) {
     }
 }
 
-void merge (int v[], int n, int mid) {
-    int *a = malloc (mid * sizeof (int));
-    int i, *b = malloc ((n-mid) * sizeof (int));
-
-    // Subdivide array
-    for (i=0; i<mid; ++i) a[i] = v[i];
-    for (i=0; i<n-mid; ++i) b[i] = v[mid+i];
-
-    // Insert elements of arrays a and b into v in sorted manner
-    i = 0;
-    int j=0, k=0;
-    while (j<mid && k<n-mid) {
-        if (a[j] < b[k]) v[i++] = a[j++];
-        else v[i++] = b[k++];
-    }
-
-    // Insert leftover elements
-    while (j<mid) v[i++] = a[j++];
-    while (k<n-mid) v[i++] = b[k++];
-}
-
-void mergesortparallelaux (int v[], int tam, int cutoff) {
-    if (tam > 1) {
-        int mid = tam / 2;
-        // Divide
-        if (tam < cutoff) {
-            mergesortparallelaux (v, mid, cutoff);
-            mergesortparallelaux (v + mid, tam - mid, cutoff);
-        }
-        else {
-            #pragma omp task 
-            { 
-                mergesortparallelaux (v, mid, cutoff); 
-            }
-            #pragma omp task 
-            { 
-                mergesortparallelaux (v + mid, tam - mid, cutoff);
-            }
-        }
-        // Conquer
-        #pragma omp taskwait
-        merge (v, tam, mid);
-    }
-}
-
-void mergesortparallel (int v[], int tam, int cutoff) {
-    mergesortparallelaux (v, tam, cutoff);
-} 
-
-void mergesortaux (int v[], int tam) {
-    if (tam > 1) {
-        int mid = tam / 2;
-        // Divide
-        mergesortaux (v, mid);
-        mergesortaux (v + mid, tam - mid);
-        
-        // Conquer
-        merge (v, tam, mid);
-    }
-}
-
-void mergesort (int v[], int tam) {
-    mergesortaux (v, tam);
+int isOrdered (int v[], int size) {
+    int i;
+    for (i=1; i<size && v[i-1]<=v[i]; ++i);
+    return i == size;
 }
 
 void swap (int* a, int* b) {
@@ -98,62 +38,6 @@ int partition (int arr[], int low, int high) {
     }
     swap(&arr[i + 1], &arr[high]);
     return (i + 1);
-}
-
-/*
-int partition(int *a, int p, int r) {
-    int lt[r-p];
-    int gt[r-p];
-    int i;
-    int j;
-    int key = a[r];
-    int lt_n = 0;
-    int gt_n = 0;
-
-    for(i = p; i < r; i++){
-        if(a[i] < a[r]){
-            lt[lt_n++] = a[i];
-        }else{
-            gt[gt_n++] = a[i];
-        }   
-    }   
-
-    for(i = 0; i < lt_n; i++){
-        a[p + i] = lt[i];
-    }   
-
-    a[p + lt_n] = key;
-
-    for(j = 0; j < gt_n; j++){
-        a[p + lt_n + j + 1] = gt[j];
-    }   
-
-    return p + lt_n;
-}*/
-
-void quicksortparallelaux (int arr[], int low, int high, int cutoff) {
-    if (low < high) {
-        int id = omp_get_thread_num();
-        // printf ("Thread %d executing | Size: %d\n", id, high-low+1);
-        int pi = partition(arr, low, high);
-        if (high - low < cutoff) {
-            quicksortparallelaux (arr, low, pi - 1, cutoff);
-            quicksortparallelaux (arr, pi + 1, high, cutoff);
-        }
-        else {
-            #pragma omp task
-            quicksortparallelaux (arr, low, pi - 1, cutoff); 
-
-            #pragma omp task
-            quicksortparallelaux (arr, pi + 1, high, cutoff); 
-        }
-    }
-}
-
-void quicksortparallel (int v[], int tam, int cutoff) {
-    omp_set_dynamic(0);
-    quicksortparallelaux (v, 0, tam-1, cutoff);
-    omp_set_dynamic(1);
 }
 
 void quicksortaux (int arr[], int low, int high) {
@@ -184,51 +68,68 @@ void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
 
     // Colocar cada elemento no balde correspondente
     n = (max - min + 1) / num_bucket;
-    //#pragma omp for schedule(dynamic)
     for (i=0; i<tam; i++) {
         aux = v[i];
         j = aux / n;
-        //omp_set_lock(&(b[j].lock));
         b[j].balde[b[j].topo++] = aux;
-        //omp_unset_lock(&(b[j].lock));
     }
 }
 
 void distributeBucketsParallel (bucket b[], int v[], int tam, int num_bucket, int thread_count) {
-    int i, j, aux;
+    int i, j, k;
     float n;
 
-    int sizes[thread_count], cum_size=tam;
-    for (i=0; i<thread_count; ++i) {
-        sizes[i] = cum_size / (thread_count-i);
-        cum_size -= sizes[i]; 
+    int sizes[thread_count+1], cum_size=tam;
+    sizes[0] = 0;
+    for (i=1; i<thread_count; ++i) {
+        sizes[i] = sizes[i-1] + cum_size / (thread_count-i+1);
+        cum_size -= sizes[i] - sizes[i-1]; 
     }
+    sizes[thread_count] = tam;
 
     // Calcular máximo e mínimo em pedaços do array para cada thread 
     int maxs[thread_count], mins[thread_count];
-    cum_size = 0;
-    #pragma omp for schedule(dynamic)
-    for(i=0; i<thread_count; ++i) {
-        int max = v[cum_size], min = v[cum_size];
-        for (j=cum_size+1; j<cum_size+sizes[i]; ++j) {
-            if (v[j] > max) max = v[j];
-            if (v[j] < min) min = v[j];
+    #pragma omp parallel num_threads(thread_count)
+    {
+        #pragma omp for schedule(dynamic)
+        for(i=0; i<thread_count; ++i) {
+            int max = v[sizes[i]], min = v[sizes[i]];
+            for (j=sizes[i]+1; j<sizes[i+1]; ++j) {
+                if (v[j] > max) max = v[j];
+                if (v[j] < min) min = v[j];
+            }
+            maxs[i] = max;
+            mins[i] = min;
         }
-        maxs[i] = max;
-        mins[i] = min;
-        cum_size += sizes[i];
     }
+
     int max = maxs[0], min = mins[0];
     for (i=1; i<thread_count; ++i) {
         if (max < maxs[i]) max = maxs[i];
         if (min > mins[i]) min = mins[i];
     }
 
+    // Inicializar as locks
+    for (i=0; i<num_bucket; ++i)
+       omp_init_lock(&(b[i].lock));
+
     // Colocar cada elemento no balde correspondente
     n = (max - min + 1) / num_bucket;
-    for (i=0; i<tam; i++) {
-        aux = v[i];
-        j = aux / n;
-        b[j].balde[b[j].topo++] = aux;
+    #pragma omp parallel num_threads(thread_count)
+    {
+        int iaux;
+        #pragma omp for schedule(dynamic)
+        for (k=0; k<thread_count; ++k) {
+            for (iaux=sizes[k]; iaux<sizes[k+1]; iaux++) {
+                int aux = v[iaux];
+                int w = aux / n;
+                omp_set_lock(&(b[w].lock));
+                b[w].balde[b[w].topo++] = aux;
+                omp_unset_lock(&(b[w].lock));
+            }
+        }
     }
+    
+    for (i=0; i<num_bucket; ++i)
+       omp_destroy_lock(&(b[i].lock));
 }

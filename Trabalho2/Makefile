@@ -1,5 +1,5 @@
 totalsize = 10000000
-num_buckets = 5
+num_buckets = 1000 
 thread_count = 12
 parallel = 1
 sort_func = "quicksort"
