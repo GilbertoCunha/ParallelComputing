@@ -1,13 +1,9 @@
-totalsize = 10000000
-num_buckets = 1000 
-thread_count = 12
-parallel = 1
-sort_func = "quicksort"
-cutoff = 100000
+totalsize = 1000000
+np = 4 
 
-run: bucketSort.c
-	@gcc -g -O2 -fopenmp -I/share/apps/papi/5.5.0/include -L/share/apps/papi/5.5.0/lib bucketSort.c sorting.c -lpapi -lm
-	@sudo ./a.out $(totalsize) $(num_buckets) $(thread_count) $(parallel) $(sort_func) $(cutoff)
+run: bucketSort.c sorting.c
+	@mpicc bucketSort.c sorting.c -lm
+	@mpirun -np $(np) ./a.out $(totalsize)
 
 clean:
 	@rm ./a.out
