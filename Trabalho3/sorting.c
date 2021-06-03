@@ -22,6 +22,15 @@ int isOrdered (int v[], int size) {
     return i == size;
 }
 
+double mean (double v[], int n) {
+    double r = 0;
+
+    for (int i=0; i<n; ++i) r += v[i];
+    r /= n;
+
+    return r;
+}
+
 void swap (int* a, int* b) {
     int t = *a;
     *a = *b;

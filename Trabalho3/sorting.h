@@ -8,6 +8,7 @@ typedef struct {
 
 void shuffle (int array[], int n);
 int isOrdered (int v[], int size);
+double mean (double v[], int n);
 void quicksort (int v[], int tam);
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket);
 #endif
