@@ -122,8 +122,8 @@ int main (int argc, char **argv) {
             waittime = totaltime - (proctime + msgtime);
 
             // Verify if array is ordered
-            if (isOrdered(w, totalsize)==1) printf ("SUCCESS\n");
-            else printf ("OUT OF ORDER\n");
+            // if (isOrdered(w, totalsize)==1) printf ("SUCCESS\n");
+            // else printf ("OUT OF ORDER\n");
 
             // Print arguments to csv file
             fprintf (f, "%d,", totalsize);
