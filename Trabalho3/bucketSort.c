@@ -6,10 +6,7 @@
 #include <math.h>
 #include "sorting.h"
 
-// Papi defines
-#define NUM_EVENTS 2
-#define NUM_RUNS 10 
-
+#define NUM_RUNS 1 
 
 void bucket_sort (int v[], int tam, int num_buckets) {
     bucket *b = malloc (num_buckets * sizeof (bucket));                                      
@@ -20,7 +17,7 @@ void bucket_sort (int v[], int tam, int num_buckets) {
         b[i].topo = 0; // Inicializar o número de elementos usados no balde
         b[i].balde = malloc (tam * sizeof(int)); // Inicializar o array com o tamanho adequado
     }
-        
+
     // Distribuir os elementos do array pelos baldes
     distributeBuckets (b, v, tam, num_buckets);
 
@@ -46,14 +43,13 @@ int main (int argc, char **argv) {
     FILE *f; MPI_Status status;
     int totalsize = atoi(argv[1]);
     int num_buckets = atoi(argv[2]);
-    int id, size, i, j, localsize, *w, *v;
+    int id, size, i, j, localsize, *w, *v, *local;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
     if (id == 0) {
-        
         // Open results csv file
         if (access("buckets.csv", F_OK) != 0) {
             f = fopen("buckets.csv", "w");
@@ -62,63 +58,67 @@ int main (int argc, char **argv) {
         }
         else f = fopen("buckets.csv", "a");
 
-        // Create and shuffle array 
+        // Create array 
         v = malloc (totalsize * sizeof (int)); 
         for (i=0; i<totalsize; ++i) v[i] = i;
 
-        // Make array copy
+        // Allocate memory for array copy
         w = malloc (totalsize * sizeof (int));
     }
 
     // Perform sorting computation
     for (i=0; i<NUM_RUNS; ++i) {
+                
+        start = MPI_Wtime();
+
+        // Determine localsize
+        int sp = 0;
+        int counts[size], displacements[size];
+        
+        // Send array sizes to processes and store them in an array
+        for (j=0; j<size; ++j) {
+            displacements[j] = sp;
+            counts[j] = (totalsize - sp) / (size - j);
+            sp += counts[j];
+        }
+        localsize = counts[id];
+        local = malloc (localsize * sizeof (int));
+        
         if (id == 0) {
             // Initialize array copy and shuffle it
             for (j=0; j<totalsize; ++j) w[j] = v[j];
             shuffle (w, totalsize);
-            
-            start = MPI_Wtime();
 
-            int sp = 0, cumsize = totalsize; 
-            localsize = cumsize / size;
-            cumsize -= localsize; sp += localsize;
-            printf ("Start sendind data\n");
-            for (j=1; j<size; ++j) {
-                int psize = cumsize / (size - j);
-                MPI_Send(&psize, 1, MPI_INT, j, j, MPI_COMM_WORLD);
-                MPI_Send(w+sp, psize, MPI_INT, j, j, MPI_COMM_WORLD);
-                cumsize -= psize;
-                sp += psize;
-            }
-            printf ("Finished sendind data\n");
-        } 
-        
-        // MPI_Barrier(MPI_COMM_WORLD);
+            printf ("Original array: ");
+            for (j=0; j<totalsize; ++j) printf ("%d ", w[j]);
+            printf ("\n");
 
-        if (id != 0) {
-            printf ("Started receiving data\n");
-            MPI_Recv(&localsize, 1, MPI_INT, 0, id, MPI_COMM_WORLD, &status);
-            w = malloc (localsize * sizeof (int));
-            printf ("Received localsize\n");
-            MPI_Recv(w, localsize, MPI_INT, 0, id, MPI_COMM_WORLD, &status);
-            printf ("Finished receiving data");
-        }
+            MPI_Scatterv(w, counts, displacements, MPI_INT, local, localsize, MPI_INT, 0, MPI_COMM_WORLD);
+        } else 
+            MPI_Scatterv(NULL, NULL, NULL, MPI_INT, local, localsize, MPI_INT, 0, MPI_COMM_WORLD);
         
-        bucket_sort (w, localsize, num_buckets);
+        bucket_sort (local, localsize, num_buckets);
+        // if (isOrdered(local, localsize)) printf ("Process %d sorted successfully\n", id);
+        // else printf ("Process %d did not sort\n", id);
         MPI_Barrier(MPI_COMM_WORLD);
 
+        printf ("Process %d sorted array: ", id);
+        for (j=0; j<localsize; ++j) printf ("%d ", local[j]);
+        printf ("\n");
+
+        // Receive data again in root process
+        MPI_Gatherv(local, localsize, MPI_INT, w, counts, displacements, MPI_INT, 0, MPI_COMM_WORLD);
+
         if (id == 0) {
-            // Receive data to original array
-            int sp = localsize, psize;
-            for (j=1; j<size; ++j) {
-                MPI_Recv(&psize, 1, MPI_INT, j, j, MPI_COMM_WORLD, &status);
-                MPI_Recv(w+sp, psize, MPI_INT, j, j, MPI_COMM_WORLD, &status);
-                sp += psize;
-            }
             time = MPI_Wtime() - start;
+
+            printf ("Final array: ");
+            for (j=0; j<totalsize; ++j) printf ("%d ", w[j]);
+            printf ("\n");
             
             // Verify if array is ordered
-            if (isOrdered(w, totalsize)==1) printf ("SUCCESS\n");
+            // if (isOrdered(w, totalsize)==1) printf ("SUCCESS\n");
+            // else printf ("OUT OF ORDER\n");
 
             // Print arguments to csv file
             fprintf (f, "%d,", totalsize);
@@ -127,10 +127,8 @@ int main (int argc, char **argv) {
 
             // Log metrics to csv file
             fprintf (f, "%f\n", time); 
-        } else {
-            MPI_Send(&localsize, 1, MPI_INT, 0, id, MPI_COMM_WORLD);
-            MPI_Send(w, localsize, MPI_INT, 0, id, MPI_COMM_WORLD);
-        }
+        } 
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     if (id == 0) fclose (f);

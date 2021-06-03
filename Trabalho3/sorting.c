@@ -1,7 +1,8 @@
 #include "sorting.h"
-#include "limits.h"
-#include "stdlib.h"
+#include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 void shuffle (int array[], int n) {
     if (n > 1) {
@@ -55,8 +56,7 @@ void quicksort (int v[], int tam) {
 }
 
 void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
-    int i, j, aux;
-    float n;
+    int i, j, aux, n;
 
     // Calcular máximo e mínimo do array 
     int max = v[0], min = v[0];
@@ -66,10 +66,10 @@ void distributeBuckets (bucket b[], int v[], int tam, int num_bucket) {
     }
 
     // Colocar cada elemento no balde correspondente
-    n = (max - min + 1) / num_bucket;
+    n = ceil((double) (max - min + 1) / num_bucket);
     for (i=0; i<tam; i++) {
         aux = v[i];
-        j = aux / n;
+        j = (aux - min) / n;
         b[j].balde[b[j].topo++] = aux;
     }
 }
