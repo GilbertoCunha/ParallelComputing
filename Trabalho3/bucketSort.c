@@ -82,12 +82,12 @@ int main (int argc, char **argv) {
     
     if (id == 0) {
         // Open results csv file
-        if (access("buckets.csv", F_OK) != 0) {
-            f = fopen("buckets.csv", "w");
-            fprintf (f, "TotalSize,ProcessCount,");
+        if (access("results.csv", F_OK) != 0) {
+            f = fopen("results.csv", "w");
+            fprintf (f, "TotalSize,NumBuckets,ProcessCount,");
             fprintf (f, "ProcTime,MsgTime,WaitTime,TotalTime\n"); 
         }
-        else f = fopen("buckets.csv", "a");
+        else f = fopen("results.csv", "a");
     }
 
     // Create array 
@@ -127,6 +127,7 @@ int main (int argc, char **argv) {
 
             // Print arguments to csv file
             fprintf (f, "%d,", totalsize);
+            fprintf (f, "%d,", num_buckets);
             fprintf (f, "%d,", size);
 
             // Log metrics to csv file
