@@ -82,12 +82,12 @@ int main (int argc, char **argv) {
     
     if (id == 0) {
         // Open results csv file
-        if (access("weak.csv", F_OK) != 0) {
+        if (access("results.csv", F_OK) != 0) {
             f = fopen("results.csv", "w");
             fprintf (f, "TotalSize,NumBuckets,ProcessCount,");
             fprintf (f, "ProcTime,MsgTime,WaitTime,TotalTime\n"); 
         }
-        else f = fopen("weak.csv", "a");
+        else f = fopen("results.csv", "a");
     }
 
     // Create array 
